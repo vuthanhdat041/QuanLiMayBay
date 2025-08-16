@@ -1,0 +1,5 @@
+4
+VN-123         AIRBUS 100                               900
+VN-999         BOEING 222                               300
+VN-456         BOEING 111                               800
+VN-111         BOEING 111                               800
