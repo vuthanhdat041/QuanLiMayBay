@@ -49,6 +49,8 @@ enum TrangThaiChuyenBay
 struct Ve
 {
     char soCMND[MAX_CMND_LENGTH] = "";
+    int soGhe = 0;
+    bool trangThai = false;
 };
 
 struct DSVe

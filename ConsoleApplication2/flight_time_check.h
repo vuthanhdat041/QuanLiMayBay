@@ -122,19 +122,27 @@ namespace flight_time {
 
     // Validate full rules for flight input: valid calendar + strictly future (> now).
     // Set allow_equal_now=true if you want to accept "ngay bay = phut hien tai".
-    inline bool ValidateFlightDateTime(int y, int m, int d, int hh, int mi, std::string& err, bool allow_equal_now = false) {
+    inline bool ValidateFlightDateTime(int y, int m, int d, int hh, int mi,
+        std::string& err, TrangThaiChuyenBay& ttcb) {
         if (!ValidateCalendar(y, m, d, hh, mi, err)) return false;
+
         time_t target;
         if (!ToLocalTimeT_Strict(y, m, d, hh, mi, target, err)) return false;
 
         time_t now = std::time(nullptr);
         double diff = std::difftime(target, now);
-        if (allow_equal_now ? (diff < 0.0) : (diff <= 0.0)) {
-            err = "Thoi gian khoi hanh phai o tuong lai so voi hien tai";
-            return false;
+
+        
+        if (diff < 0) 
+            ttcb = HOAN_TAT;
+        else {
+            ttcb = CON_VE;
         }
         return true;
+      
+        
     }
+
     // Validate: lịch hợp lệ + thời điểm tồn tại (local) + cách hiện tại >= min_lead_hours
     inline bool ValidateFlightDateTimeLeadHours(const ThoiGian& t, int min_lead_hours, std::string& err, bool allow_equal = false) {
         if (!ValidateCalendar(t.nam, t.thang, t.ngay, t.gio, t.phut, err)) return false;
@@ -154,10 +162,7 @@ namespace flight_time {
         return true;
     }
 
-    // Overloads using your struct ThoiGian (model.h)
-    inline bool ValidateFlightDateTime(const ThoiGian& t, std::string& err, bool allow_equal_now = false) {
-        return ValidateFlightDateTime(t.nam, t.thang, t.ngay, t.gio, t.phut, err, allow_equal_now);
-    }
+    
     inline int CompareToNowLocal(const ThoiGian& t, std::string& err) {
         return CompareToNowLocal(t.nam, t.thang, t.ngay, t.gio, t.phut, err);
     }

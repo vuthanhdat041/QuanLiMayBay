@@ -66,13 +66,14 @@ int  CountCB(PTRCB first);
 nodeChuyenBay* FindCBByMa(PTRCB first, const char* maCB);
 bool InsertCB_Append(PTRCB& first, const ChuyenBay& cb);
 bool DeleteCB_ByMa(PTRCB& first, const char* maCB);
-
-// File I/O (CSV đơn giản, có dòng đếm ở đầu, giống DSMB)
-bool LoadDSCB(PTRCB& first, const char* filePath);
-bool SaveDSCB(PTRCB first, const char* filePath);
+int ktslcb(PTRCB Frist);
+int TimSoChoTheoSoHieu(DSMB dsmb, char soHieuMB[MAX_SO_HIEU_MB]);
+// File I/O (có dòng đếm ở đầu, giống DSMB)
+bool LoadFile_CB(string tenfile, PTRCB& dscb);
+bool SaveFile_CB(string tenfile, PTRCB dscb);
 
 // In bảng
-void XemDSCB(PTRCB first, int x0, int y0);
+void XemDSCB(PTRCB first);
 
 // Form CRUD
 void FormThemChuyenBay(PTRCB& dscb, const DSMB& dsmb);
@@ -262,7 +263,7 @@ int ConsoleWidth() {
 void screen_chuyenbay()
 {
     DSMB dsmb; DocDSMB(dsmb, "DSMB.txt");
-    PTRCB dscb = nullptr; InitDSCB(dscb); LoadDSCB(dscb, "DSCB.txt");
+    PTRCB dscb = nullptr; InitDSCB(dscb); LoadFile_CB("DSCB.txt", dscb);
 
     while (true)
     {
@@ -291,7 +292,7 @@ void screen_chuyenbay()
         int tableY = menuBottom + 2;
 
         // Vẽ bảng
-        XemDSCB(dscb, tableX, tableY);
+        XemDSCB(dscb);
 
         // Điều khiển phím cho menu
         int xp = mx, yp = my, xcu = xp, ycu = yp;
@@ -307,7 +308,7 @@ void screen_chuyenbay()
             }
             if (_kbhit()) {
                 char c = _getch();
-                if (c == 27) { SaveDSCB(dscb, "DSCB.txt"); FreeDSCB(dscb); FreeDSMB(dsmb); return; }
+                if (c == 27) { SaveFile_CB("DSCB.txt", dscb); FreeDSCB(dscb); FreeDSMB(dsmb); return; }
                 if (c == -32 || c == (char)224) {
                     needRedraw = true; c = _getch();
                     if (c == 72) { if (yp != my) yp -= step; else yp = my + step * (sl - 1); }
@@ -315,12 +316,12 @@ void screen_chuyenbay()
                 }
                 else if (c == 13) {
                     int idx = (yp - my) / step;
-                    if (idx == 0) { ShowCur(1); FormThemChuyenBay(dscb, dsmb);         SaveDSCB(dscb, "DSCB.txt"); break; }
-                    else if (idx == 1) { ShowCur(1); FormHieuChinhChuyenBay(dscb, dsmb);    SaveDSCB(dscb, "DSCB.txt"); break; }
-                    else if (idx == 2) { ShowCur(1); FormXoaChuyenBay(dscb);                SaveDSCB(dscb, "DSCB.txt"); break; }
-                    else if (idx == 3) { ShowCur(1); FormDatVe(dscb);                       SaveDSCB(dscb, "DSCB.txt"); break; } // <-- ĐẶT VÉ
+                    if (idx == 0) { ShowCur(1); FormThemChuyenBay(dscb, dsmb);         SaveFile_CB("DSCB.txt", dscb); break; }
+                    else if (idx == 1) { ShowCur(1); FormHieuChinhChuyenBay(dscb, dsmb);    SaveFile_CB("DSCB.txt", dscb); break; }
+                    else if (idx == 2) { ShowCur(1); FormXoaChuyenBay(dscb);                SaveFile_CB("DSCB.txt", dscb); break; }
+                    else if (idx == 3) { ShowCur(1); FormDatVe(dscb);                       SaveFile_CB("DSCB.txt", dscb); break; } // <-- ĐẶT VÉ
                     else if (idx == 4) { ShowCur(1); FormXemDanhSachVe(dscb);                                        break; } // <-- XEM DS VÉ
-                    else if (idx == 5) { SaveDSCB(dscb, "DSCB.txt"); FreeDSCB(dscb); FreeDSMB(dsmb); return; }          // QUAY LẠI
+                    else if (idx == 5) { SaveFile_CB( "DSCB.txt",dscb); FreeDSCB(dscb); FreeDSMB(dsmb); return; }          // QUAY LẠI
                 }
             }
         }
@@ -799,130 +800,102 @@ static bool parseInt(const char* s, int& out) {
     char* endp = nullptr; long v = strtol(s, &endp, 10);
     if (endp == s || *endp != '\0') return false; out = (int)v; return true;
 }
+bool LoadFile_CB(string tenfile, PTRCB& dscb) {
+    ifstream fin(tenfile);
+    if (!fin.is_open()) return false;
 
-bool LoadDSCB(PTRCB& first, const char* filePath)
-{
-    FreeDSCB(first);
+    int slcb;
+    fin >> slcb;
+    if (slcb == 0) {
+        dscb = nullptr;
+        return false;
+    }
+    fin.ignore();
+    for (int i = 0; i < slcb; i++) {
+        PTRCB ds = new nodeChuyenBay;
+        ds->next = nullptr;
 
-    ifstream in(filePath);
-    if (!in) return true; // Không có file -> danh sách rỗng
+        fin >> ds->cb.dsVe.soVeDaDat;
+     
+        fin >> ds->cb.maCB;
+        fin >> ds->cb.ngayGioKhoiHanh.nam;
+        fin >> ds->cb.ngayGioKhoiHanh.thang;
+        fin >> ds->cb.ngayGioKhoiHanh.ngay;
+        fin >> ds->cb.ngayGioKhoiHanh.gio;
+        fin >> ds->cb.ngayGioKhoiHanh.phut;
+        fin >> ds->cb.sanBayDen;
+        fin >> ds->cb.soHieuMB;
+        fin >> ds->cb.soChoMax;
+        int tempTT;
+        fin >> tempTT;
+        ds->cb.ttcb = (TrangThaiChuyenBay)tempTT;
 
-    // Đọc N (dùng getline để tránh trộn >> với getline)
-   string s;
-    if (!getline(in, s)) return true;
-    if (!s.empty() && s.back() == '\r') s.pop_back();
-    int n = 0;
-    try { n = std::stoi(s); }
-    catch (...) { return false; }
+        // Cấp phát mảng vé
+        ds->cb.dsVe.danhSach = new Ve[ds->cb.dsVe.soVeDaDat];
 
-    for (int i = 0; i < n; ++i)
-    {
-        // Đọc 1 dòng header (bỏ dòng trống nếu có)
-        std::string line;
-        do {
-            if (!std::getline(in, line)) return false;
-            if (!line.empty() && line.back() == '\r') line.pop_back();
-        } while (line.empty());
-
-        // Tách 11 trường bằng dấu phẩy
-        char buf[512];
-        std::strncpy(buf, line.c_str(), sizeof(buf) - 1);
-        buf[sizeof(buf) - 1] = '\0';
-
-        char* ctx = nullptr;
-        char* tok = std::strtok(buf, ",", &ctx);
-        if (!tok) return false;
-
-        ChuyenBay cb{};
-        cb.dsVe.soVeDaDat = 0;
-        cb.dsVe.danhSach = nullptr;
-
-        // maCB
-        std::strcpy(cb.maCB, tok);
-
-        // yyyy,mm,dd,hh,mi
-        tok = std::strtok(nullptr, ",", &ctx); if (!tok) return false; cb.ngayGioKhoiHanh.nam = atoi(tok);
-        tok = std::strtok(nullptr, ",", &ctx); if (!tok) return false; cb.ngayGioKhoiHanh.thang = atoi(tok);
-        tok = std::strtok(nullptr, ",", &ctx); if (!tok) return false; cb.ngayGioKhoiHanh.ngay = atoi(tok);
-        tok = std::strtok(nullptr, ",", &ctx); if (!tok) return false; cb.ngayGioKhoiHanh.gio = atoi(tok);
-        tok = std::strtok(nullptr, ",", &ctx); if (!tok) return false; cb.ngayGioKhoiHanh.phut = atoi(tok);
-
-        // sanBayDen, soHieuMB
-        tok = std::strtok(nullptr, ",", &ctx); if (!tok) return false; strcpy_s(cb.sanBayDen, tok);
-        tok = std::strtok(nullptr, ",", &ctx); if (!tok) return false; strcpy_s(cb.soHieuMB, tok);
-
-        // soChoMax, ttcb, soVeDaDat
-        tok = strtok_s(nullptr, ",", &ctx); if (!tok) return false; cb.soChoMax = std::atoi(tok);
-        if (cb.soChoMax < 0) cb.soChoMax = 0; // <-- thay cho std::max
-        tok = strtok_s(nullptr, ",", &ctx); if (!tok) return false; {
-            int tt = atoi(tok);
-            if (tt < 0 || tt > 3) tt = CON_VE;
-            cb.ttcb = (TrangThaiChuyenBay)tt;
-        }
-        tok = strtok_s(nullptr, ",", &ctx); if (!tok) return false; int k = std::atoi(tok);
-        if (k < 0) k = 0;
-        if (k > cb.soChoMax) k = cb.soChoMax;
-
-        // Cấp mảng vé
-        if (cb.soChoMax > 0) cb.dsVe.danhSach = new Ve[cb.soChoMax];
-
-        // Đọc k dòng CMND
-        for (int j = 0; j < k; ++j) {
-            if (!std::getline(in, s)) break;
-            if (!s.empty() && s.back() == '\r') s.pop_back();
-            // trim trắng 2 đầu
-            size_t L = 0, R = s.size();
-            while (L < R && (s[L] == ' ' || s[L] == '\t')) ++L;
-            while (R > L && (s[R - 1] == ' ' || s[R - 1] == '\t')) --R;
-            s = s.substr(L, R - L);
-
-            if (cb.dsVe.danhSach)
-                strcpy_s(cb.dsVe.danhSach[cb.dsVe.soVeDaDat].soCMND, s.c_str());
-            cb.dsVe.soVeDaDat++;
+        for (int j = 0; j < ds->cb.dsVe.soVeDaDat; j++) {
+            string tt;
+            fin >> ds->cb.dsVe.danhSach[j].soCMND;
+            fin >> ds->cb.dsVe.danhSach[j].soGhe;
+            fin >> tt;
+            ds->cb.dsVe.danhSach[j].trangThai = (tt == "true");
         }
 
-        // cập nhật trạng thái nếu full
-        if (cb.dsVe.soVeDaDat >= cb.soChoMax) cb.ttcb = HET_VE;
-
-        InsertCB_Append(first, cb);  // <-- dùng 'first', không phải 'dscb'
+        // Thêm node vào danh sách liên kết
+        if (i == 0) {
+            ds->next = dscb;
+            dscb = ds;
+        }
+        else {
+            PTRCB get;
+            for (get = dscb; get->next != nullptr; get = get->next);
+            get->next = ds;
+        }
     }
 
+    fin.close();
     return true;
 }
 
+int ktslcb(PTRCB Frist) {
+    PTRCB p;
+    int i;
+    for (p = Frist, i = 0; p != NULL; p = p->next, i++);
+    return i;
+}
 
-bool SaveDSCB(PTRCB first, const char* filePath)
-{
-    std::ofstream out(filePath);
-    if (!out) return false;
+bool SaveFile_CB(string tenfile, PTRCB dscb) {
+    ofstream out(tenfile);
+    if (!out.is_open()) return false;
 
-    int n = CountCB(first);
-    out << n << "\n";
+    int slcb = ktslcb(dscb);
+    out << slcb << "\n";
 
-    for (PTRCB p = first; p; p = p->next)
-    {
-        const ChuyenBay& c = p->cb;
-
-        // DÒNG HEADER (11 trường)
-        out << c.maCB << ","
-            << c.ngayGioKhoiHanh.nam << ","
-            << c.ngayGioKhoiHanh.thang << ","
-            << c.ngayGioKhoiHanh.ngay << ","
-            << c.ngayGioKhoiHanh.gio << ","
-            << c.ngayGioKhoiHanh.phut << ","
-            << c.sanBayDen << ","
-            << c.soHieuMB << ","
-            << c.soChoMax << ","
-            << (int)c.ttcb << ","
-            << c.dsVe.soVeDaDat
+    for (PTRCB getCB = dscb; getCB != nullptr; getCB = getCB->next) {
+        out <<  getCB->cb.dsVe.soVeDaDat << " "
+            <<  getCB->cb.maCB << " " 
+            <<  getCB->cb.ngayGioKhoiHanh.nam << " "
+            <<  getCB->cb.ngayGioKhoiHanh.thang << " "
+            <<  getCB->cb.ngayGioKhoiHanh.ngay << " "
+            <<  getCB->cb.ngayGioKhoiHanh.gio << " "
+            <<  getCB->cb.ngayGioKhoiHanh.phut << " "
+            <<  getCB->cb.sanBayDen << " "
+            <<  getCB->cb.soHieuMB << " "
+            <<  getCB->cb.soChoMax << " "
+            <<  (int)getCB->cb.ttcb 
             << "\n";
 
-        // k DÒNG CMND
-        for (int i = 0; i < c.dsVe.soVeDaDat; ++i) {
-            out << c.dsVe.danhSach[i].soCMND << "\n";
+        for (int i = 0; i < getCB->cb.dsVe.soVeDaDat; i++) {
+            out << getCB->cb.dsVe.danhSach[i].soCMND << " "
+                << getCB->cb.dsVe.danhSach[i].soGhe << " "  // số ghế: index + 1
+                << (getCB->cb.dsVe.danhSach[i].trangThai ? "true" : "false")
+                << "\n";
         }
-        // (không bắt buộc) out << "\n"; // nếu thích để 1 dòng trống giữa các block
+        out << "\n";
     }
+
+    out.close();
+    
     return true;
 }
 
@@ -937,29 +910,36 @@ static const char* TrangThaiStr(TrangThaiChuyenBay t)
     default:         return "?";
     }
 }
-void XemDSCB(PTRCB first, int x0, int y0)
-{
-    gotoXY(x0, y0); cout << left
+int TimSoChoTheoSoHieu(DSMB dsmb, char soHieuMB[MAX_SO_HIEU_MB]) {
+    for (int i = 0; i < dsmb.n; i++) {
+        if (strcmp(dsmb.nodes[i]->soHieuMB, soHieuMB) == 0) {
+            return dsmb.nodes[i]->soCho;
+        }
+    }
+    return 0; // Không tìm thấy
+}
+
+void XemDSCB(PTRCB first) {
+    gotoXY(0, 17);
+    cout << left
         << setw(12) << "MA CB"
         << setw(20) << "NGAY GIO"
         << setw(24) << "SAN BAY DEN"
         << setw(16) << "SO HIEU MB"
         << setw(10) << "SO CHO"
         << setw(12) << "TRANG THAI"
-        << setw(10) << "DA DAT";
+        << setw(10) << "DA DAT" << "\n";
 
-    gotoXY(x0, y0 + 1); cout << string(12 + 20 + 24 + 16 + 10 + 12 + 10, '-');
+    cout << string(12 + 20 + 24 + 16 + 10 + 12 + 10, '-') << "\n";
 
-    int r = 0;
-    for (PTRCB p = first; p; p = p->next, ++r)
-    {
+    for (PTRCB p = first; p; p = p->next) {
+        
         const ChuyenBay& c = p->cb;
         char bufDT[32];
         snprintf(bufDT, sizeof(bufDT), "%04d-%02d-%02d %02d:%02d",
             c.ngayGioKhoiHanh.nam, c.ngayGioKhoiHanh.thang, c.ngayGioKhoiHanh.ngay,
             c.ngayGioKhoiHanh.gio, c.ngayGioKhoiHanh.phut);
 
-        gotoXY(x0, y0 + 2 + r);
         cout << left
             << setw(12) << c.maCB
             << setw(20) << bufDT
@@ -967,9 +947,11 @@ void XemDSCB(PTRCB first, int x0, int y0)
             << setw(16) << c.soHieuMB
             << setw(10) << c.soChoMax
             << setw(12) << TrangThaiStr(c.ttcb)
-            << setw(10) << c.dsVe.soVeDaDat;
+            << setw(10) << c.dsVe.soVeDaDat
+            << "\n";
     }
 }
+
 
 // Helpers
 static bool ValidDateTime(const ThoiGian& t)
@@ -1006,7 +988,8 @@ void FormThemChuyenBay(PTRCB& dscb, const DSMB& dsmb)
     char maCB[MAX_MA_CB_LENGTH] = { 0 };
     char sanBayDen[MAX_SANBAY_DEN] = { 0 };
     char soHieuMB[MAX_SO_HIEU_MB] = { 0 };
-    ThoiGian tg{ 0,0,0,0,0 };
+    ThoiGian tg;
+    TrangThaiChuyenBay ttcb;
 
     // MA CB (theo format anh đang dùng: 2 chữ + ' ' + số)
     while (true)
@@ -1014,7 +997,7 @@ void FormThemChuyenBay(PTRCB& dscb, const DSMB& dsmb)
         ClearAt( 36, 4, 50 );
         gotoXY(36, 4);
         if (!cin.getline(maCB, sizeof(maCB))) {
-            NormalizeSpaces(maCB); UpperCase(maCB);
+            
             // người dùng gõ quá dài -> failbit
             cin.clear();
             cin.ignore(1000, '\n');
@@ -1024,11 +1007,11 @@ void FormThemChuyenBay(PTRCB& dscb, const DSMB& dsmb)
         }
         NormalizeSpaces(maCB); UpperCase(maCB);
 
-        if (KiemTraDoDai(maCB, 4, 7) == 0 ||
-            !(isalpha((unsigned char)maCB[0]) && isalpha((unsigned char)maCB[1]) && maCB[2] == SPACE_IN_ASCII) ||
-            KiemTraPhanSauLaChuSo(3, (int)strlen(maCB), maCB) == false)
+        if (KiemTraDoDai(maCB, 3, 6) == 0 ||
+            !(isalpha((unsigned char)maCB[0]) && isalpha((unsigned char)maCB[1])) ||
+            KiemTraPhanSauLaChuSo(2, (int)strlen(maCB), maCB) == false)
         {
-            gotoXY(5, 13); cout << "  >> Sai dinh dang! (VD: VN<space>123)           ";
+            gotoXY(5, 13); cout << "  >> Sai dinh dang! (VD: VN123)           ";
             continue;
         }
         if (FindCBByMa(dscb, maCB)) {
@@ -1091,18 +1074,21 @@ void FormThemChuyenBay(PTRCB& dscb, const DSMB& dsmb)
         tg.nam = y; tg.thang = m; tg.ngay = d; tg.gio = hh; tg.phut = mi;
 
         // Kiem tra: lich hop le + phai o TUONG LAI (local time)
-        if(!flight_time::ValidateFlightDateTime(y,m,d,hh,mi, err,/* allow_equal=*/true)) {
+        
+        
+        if (!flight_time::ValidateFlightDateTime( y,m,d,hh,mi,  err,  ttcb)) {
             gotoXY(5, 13); cout << "  >> " << err << string(20, ' ');
             continue;
         }
-        if (!flight_time::ValidateFlightDateTimeLeadHours(tg, 12, err ,/* allow_equal=*/true)) {
-            gotoXY(5, 13); cout << "  >> " << err << string(20, ' ');
-            continue;
+        if (ttcb == CON_VE) {
+            if (!flight_time::ValidateFlightDateTimeLeadHours(tg, 12, err, true)) {
+                gotoXY(5, 13); cout << "  >> " << err << string(20, ' ');
+                continue;
+            }
         }
-
 
         // Xoa thong bao loi va thoat vong
-        gotoXY(5, 13); cout << string(70, ' ');
+        ClearAt(5, 13, 70);
         break;
     }
 
@@ -1115,7 +1101,7 @@ void FormThemChuyenBay(PTRCB& dscb, const DSMB& dsmb)
             gotoXY(5, 13); cout << "  >> San bay den khong hop le!                      ";
             continue;
         }
-        NormalizeSpaces(sanBayDen); UpperCase(sanBayDen);
+        RemoveAllSpaces(sanBayDen); UpperCase(sanBayDen);
         ClearAt(5, 13, 60);
         break;
     }
@@ -1143,33 +1129,7 @@ void FormThemChuyenBay(PTRCB& dscb, const DSMB& dsmb)
         break;
     }
 
-    TrangThaiChuyenBay ttcb = CON_VE; // mac dinh
-    int input_ttcb;
-   
-    while (true) {
-        
-        // đọc số
-        if (!(cin >> input_ttcb)) {
-            cin.clear();
-            cin.ignore(1000, '\n');
-            ClearAt(5, 13, 60);
-            gotoXY(5, 13); cout << "  >> Nhap so 0..3";
-            continue;
-        }
-        cin.ignore(1000, '\n'); // bỏ newline để tránh nuốt getline sau
-
-        // phạm vi 0..3
-        if (input_ttcb < 0 || input_ttcb > 3) {
-            ClearAt(5, 13, 60);
-            gotoXY(5, 13); cout << "  >> Nhap gia tri tu 0 toi 3";
-            continue;
-        }
-
-        ttcb = (TrangThaiChuyenBay)input_ttcb;
-        ClearAt(5, 13, 60);
-        break;
-    }
-
+    
 
     // Tạo chuyến bay
     ChuyenBay cb{};
@@ -1206,7 +1166,7 @@ void FormHieuChinhChuyenBay(PTRCB& dscb, const DSMB& dsmb)
     gotoXY(5, 9);  cout << "Gio  (HH MM)       [cu: " << c.ngayGioKhoiHanh.gio << ":" << c.ngayGioKhoiHanh.phut << "]: ";
     gotoXY(5, 10); cout << "San bay den        [cu: " << c.sanBayDen << "]: ";
     gotoXY(5, 11); cout << "So hieu may bay    [cu: " << c.soHieuMB << "]: ";
-    gotoXY(5, 12); cout << "Trang thai (0 HUY / 1 CON VE / 2 HET VE / 3 HOAN TAT) [cu: " << (int)c.ttcb << "]: ";
+    
 
     // Date
     char line[64];
@@ -1255,11 +1215,7 @@ void FormHieuChinhChuyenBay(PTRCB& dscb, const DSMB& dsmb)
             }
         }
     }
-    // Trang thai
-    gotoXY(63, 12);
-    if (cin.getline(line, sizeof(line)) && !IsEmpty(line)) {
-        int tt; if (parseInt(line, tt) && tt >= 0 && tt <= 3) c.ttcb = (TrangThaiChuyenBay)tt;
-    }
+   
 
     gotoXY(5, 16); cout << "Da cap nhat. Nhan phim bat ky..."; _getch(); ShowCur(0);
 }
