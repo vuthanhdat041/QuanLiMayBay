@@ -79,6 +79,9 @@ void XemDSCB(PTRCB first);
 void FormThemChuyenBay(PTRCB& dscb, const DSMB& dsmb);
 void FormHieuChinhChuyenBay(PTRCB& dscb, const DSMB& dsmb);
 void FormXoaChuyenBay(PTRCB& dscb);
+//====== Đặt vé===========
+
+bool HanhKhachDatToiDa1CB(PTRCB dscb, char* soCMND);
 
 void FormDatVe(PTRCB& dscb);
 void FormXemDanhSachVe(PTRCB dscb);
@@ -330,18 +333,56 @@ void screen_chuyenbay()
 
 
 
-
 void screen_hanhkhach()
 {
-    ResetColor();
+    ResetColor(); ShowCur(0); system("cls");
+    gotoXY(5, 1);  cout << "=== MAN HINH: HANH KHACH ===";
 
-    ShowCur(0);
-    system("cls");
-    SetColor(14);
-    gotoXY(5, 2);  cout << "=== MAN HINH: HANH KHACH ===";
-    SetColor(7);
-    gotoXY(5, 4);  cout << "Nhan ESC de quay lai menu.";
-    while (true) { if (_kbhit() && _getch() == 27) break; }
+    // MENU (trên cùng)
+    const int w = 26, h = 2, step = 2;
+    const int t_color = 11, b_color = 1, b_color_sang = 75;
+    const int sl = 4;
+    string opts[sl] = {
+        "THEM HANH KHACH",
+        "HIEU CHINH HANH KHACH",
+        "XOA HANH KHACH",
+        "QUAY LAI"
+    };
+
+    const int tableX = 5;
+    int mx = tableX;
+    int my = 3;
+    n_box(mx, my, w, h, t_color, b_color, opts, sl);
+
+    // Điều khiển phím cho menu
+    int xp = mx, yp = my, xcu = xp, ycu = yp;
+    bool needRedraw = true;
+
+    while (true) {
+        if (needRedraw) {
+            int idxOld = (ycu - my) / step;
+            int idxNew = (yp - my) / step;
+            thanh_sang(xcu, ycu, w, h, b_color, opts[idxOld]);
+            thanh_sang(xp, yp, w, h, b_color_sang, opts[idxNew]);
+            xcu = xp; ycu = yp; needRedraw = false;
+        }
+        if (_kbhit()) {
+            char c = _getch();
+            if (c == 27) return; // ESC thoát
+            if (c == -32 || c == (char)224) {
+                needRedraw = true; c = _getch();
+                if (c == 72) { if (yp != my) yp -= step; else yp = my + step * (sl - 1); }
+                else if (c == 80) { if (yp != my + step * (sl - 1)) yp += step; else yp = my; }
+            }
+            else if (c == 13) {
+                int idx = (yp - my) / step;
+                if (idx == 0) { ShowCur(1); /*FormThemHanhKhach();*/ break; }
+                else if (idx == 1) { ShowCur(1); /*FormHieuChinhHanhKhach();*/ break; }
+                else if (idx == 2) { ShowCur(1); /*FormXoaHanhKhach();*/ break; }
+                else if (idx == 3) { return; } // QUAY LAI
+            }
+        }
+    }
 }
 
 // =============================
@@ -1408,33 +1449,33 @@ void FormDatVe(PTRCB& dscb)
         ClearAt(24, 4, 50);
         gotoXY(24, 4);
         if (!cin.getline(maCB, sizeof(maCB))) {
-            NormalizeSpaces(maCB); UpperCase(maCB);
+            
             // người dùng gõ quá dài -> failbit
             cin.clear();
             cin.ignore(1000, '\n');
-            gotoXY(5, 13); cout << "Nhap qua dai (<= 15). Thu lai.         ";
+            gotoXY(5, 8); cout << "Nhap qua dai (<= 15). Thu lai.         ";
             ClearAt(24, 4, 50);
             continue;
         }
-        NormalizeSpaces(maCB); UpperCase(maCB);
+        RemoveAllSpaces(maCB); UpperCase(maCB);
 
-        if (KiemTraDoDai(maCB, 4, 7) == 0 ||
-            !(isalpha((unsigned char)maCB[0]) && isalpha((unsigned char)maCB[1]) && maCB[2] == SPACE_IN_ASCII) ||
-            KiemTraPhanSauLaChuSo(3, (int)strlen(maCB), maCB) == false)
+        if (KiemTraDoDai(maCB, 3, 6) == 0 ||
+            !(isalpha((unsigned char)maCB[0]) && isalpha((unsigned char)maCB[1])) ||
+            KiemTraPhanSauLaChuSo(2, (int)strlen(maCB), maCB) == false)
         {
-            gotoXY(5, 13); cout << "  >> Sai dinh dang! (VD: <KT1><KT2><1-4 chu so>)           ";
+            gotoXY(5, 8); cout << "  >> Sai dinh dang! (VD: <KT1><KT2><1-4 so>):               ";
             continue;
         }
         if (!(node = FindCBByMa(dscb,maCB)) ) {
-            gotoXY(5, 13); cout << "Khong tim thay chuyen bay";
+            gotoXY(5, 8); cout << "Khong tim thay chuyen bay                             ";
             continue;
         }
 
-        ClearAt(5, 13, 60);
+        ClearAt(5, 8, 60);
         break;
     }
 
-    
+
     ChuyenBay& cb = node->cb;
 
     // --- Kiem tra trang thai chuyen bay ---
@@ -1461,26 +1502,49 @@ void FormDatVe(PTRCB& dscb)
     }
 
     // --- Nhap CMND ---
-    char cmnd[MAX_CMND_LENGTH] = { 0 };
+    char soCMND[MAX_CMND_LENGTH];
     while (true) {
-        gotoXY(5, 6);  cout << "So CMND (9..12 chu so): ";
-        ClearAt(28, 6, 20);
-        gotoXY(28, 6); cin.getline(cmnd, sizeof(cmnd));
-        RemoveAllSpaces(cmnd);
+        gotoXY(5, 6);  cout << "So CMND (12 chu so): ";
+        
+        if (!cin.getline(soCMND, sizeof(soCMND))) {
+            RemoveAllSpaces(soCMND); 
+            // người dùng gõ quá dài -> failbit
+            cin.clear();
+            cin.ignore(1000, '\n');
+            gotoXY(5, 8); cout << "Khong nhap qua 12 so         ";
+            ClearAt(28, 6, 50);
+            continue;
+        }
+        // check 12 digits
+        int n = (int)strlen(soCMND);
+        bool ok = (n == 12);
 
-        // check 9..12 digits
-        int n = (int)strlen(cmnd); bool ok = (n >= 9 && n <= 12);
-        for (int i = 0; i < n && ok; ++i)
-            if (!isdigit((unsigned char)cmnd[i])) ok = false;
+        for (int i = 0; i < n && ok; ++i) {
+            if (!isdigit((unsigned char)soCMND[i])) {
+                ok = false;
+            }
+        }
 
-        if (!ok) { ClearAt(5, 8, 60); gotoXY(5, 8); cout << "  >> CMND khong hop le!"; continue; }
+        if (!ok) {
+            ClearAt(5, 8, 60);
+            gotoXY(5, 8);
+            cout << "  >> CMND khong hop le! (yeu cau 12 chu so)";
+            continue;
+        }
+
 
         // duplicate check
         bool dup = false;
         for (int i = 0; i < cb.dsVe.soVeDaDat; ++i)
-            if (strcmp(cb.dsVe.danhSach[i].soCMND, cmnd) == 0) { dup = true; break; }
+            if (strcmp(cb.dsVe.danhSach[i].soCMND, soCMND) == 0) { dup = true; break; }
 
-        if (dup) { ClearAt(5, 8, 60); gotoXY(5, 8); cout << "  >> CMND da ton tai tren chuyen nay!"; continue; }
+        if (dup) { ClearAt(5, 8, 60); gotoXY(5, 8); cout << "  >> CMND da ton tai tren chuyen nay!             "; continue; }
+
+        if (HanhKhachDatToiDa1CB(dscb, soCMND)) {
+            ClearAt(5, 8, 60);
+            gotoXY(5, 8); cout << " >> 1 CMND chi duoc dat 1 chuyen bay dang hoat dong!            ";
+            continue;
+        }
 
         ClearAt(5, 8, 60);
         break;
@@ -1488,7 +1552,7 @@ void FormDatVe(PTRCB& dscb)
 
     // --- Ghi ve ---
     int idx = cb.dsVe.soVeDaDat;
-    strncpy_s(cb.dsVe.danhSach[idx].soCMND, cmnd, sizeof(cb.dsVe.danhSach[idx].soCMND));
+    strncpy_s(cb.dsVe.danhSach[idx].soCMND, soCMND, sizeof(cb.dsVe.danhSach[idx].soCMND));
     cb.dsVe.soVeDaDat = idx + 1;
 
     // --- Cap nhat trang thai chuyen ---
@@ -1541,4 +1605,36 @@ void FormXemDanhSachVe(PTRCB dscb)
     cout << "Tong: " << cb.dsVe.soVeDaDat << "/" << cb.soChoMax
         << ".  Nhan phim bat ky de quay lai...";
     _getch(); ShowCur(0);
+}
+
+// kiểm tra toàn bộ chuyến bay khác
+
+bool HanhKhachDatToiDa1CB(PTRCB dscb, char* soCMND) {
+    for (PTRCB p = dscb; p != NULL; p = p->next) {
+        if (p->cb.ttcb == CON_VE) { // chỉ check chuyến còn hoạt động
+            for (int i = 0; i < p->cb.dsVe.soVeDaDat; ++i) {
+                if (strcmp(p->cb.dsVe.danhSach[i].soCMND, soCMND) == 0) {
+                    return true;
+                    break;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+//========QUAN LI KHACH HANG=============
+
+
+// khachhang.txt: m?i dòng 1 khách, duy?t cây b?ng inorder
+void _writeKH_inorder(ofstream& f, treeHK t) {
+    if (!t) return;
+    _writeKH_inorder(f, t->left);
+    f << t->hk.soCM << " " << t->hk.Ho << " " << t->hk.Ten << " " << t->hk.Phai << '\n';
+    _writeKH_inorder(f, t->right);
+}
+void SaveFile_KH(treeHK dskh) {
+    ofstream f("khachhang.txt");
+    _writeKH_inorder(f, dskh);
+    f.close();
 }

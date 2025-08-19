@@ -82,9 +82,9 @@ typedef nodeChuyenBay* PTRCB;
 struct HanhKhach
 {
     char soCM[MAX_CMND_LENGTH];
-    char ho[MAX_HO_LENGTH];
-    char ten[MAX_TEN_LENGTH];
-    char phai[MAX_GIOI_TINH];
+    char Ho[MAX_HO_LENGTH];
+    char Ten[MAX_TEN_LENGTH];
+    char Phai[MAX_GIOI_TINH];
 };
 
 struct nodeHK
