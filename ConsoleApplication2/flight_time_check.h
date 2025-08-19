@@ -162,6 +162,14 @@ namespace flight_time {
         return true;
     }
 
+    inline int MinutesDiff(const ThoiGian& a, const ThoiGian& b, std::string& err) {
+        time_t ta, tb;
+        if (!ToLocalTimeT_Strict(a.nam, a.thang, a.ngay, a.gio, a.phut, ta, err)) return 0;
+        if (!ToLocalTimeT_Strict(b.nam, b.thang, b.ngay, b.gio, b.phut, tb, err)) return 0;
+
+        double diff = std::difftime(ta, tb); // giây
+        return (int)(diff / 60.0);           // quy về phút
+    }
     
     inline int CompareToNowLocal(const ThoiGian& t, std::string& err) {
         return CompareToNowLocal(t.nam, t.thang, t.ngay, t.gio, t.phut, err);

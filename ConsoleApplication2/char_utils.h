@@ -164,4 +164,13 @@ bool IsEmpty(const char s[])
     }
     return true; // toàn space/tab/CR/NL
 }
+int ChuyenChuoiVeSo(char soCanChuyen_str[]) {
+    int soCanChuyen_int;
+    char* endp;
+    soCanChuyen_int  = strtol(soCanChuyen_str, &endp, 10);
+    if (endp == soCanChuyen_str || *endp != '\0') {
+        return -1;
+    }
+    return soCanChuyen_int;
+}
 #endif // CHAR_UTILS_HPP

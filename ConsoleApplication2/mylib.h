@@ -79,3 +79,5 @@ void textcolor(int x)
 	mau = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(mau, x);
 }
+
+

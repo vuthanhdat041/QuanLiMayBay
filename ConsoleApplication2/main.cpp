@@ -581,7 +581,7 @@ void FormThemMayBay(DSMB& dsmb) {
         }
         break;
     }
-    NormalizeSpaces(loaiMayBay);
+    RemoveAllSpaces(loaiMayBay);
     UpperCase(loaiMayBay);
     do
     {
@@ -690,14 +690,14 @@ void FormHieuChinhMayBay(DSMB& dsmb) {
         }
         if (IsEmpty(loaiMoi)) break; 
 
-        NormalizeSpaces(loaiMoi); UpperCase(loaiMoi);
+        RemoveAllSpaces(loaiMoi); UpperCase(loaiMoi);
         if (!isalpha((unsigned char)loaiMoi[0])) { gotoXY(5, 12); cout << "Loai moi sai dinh dang!"; ClearAt(35, 9, 50);  continue; }
         strncpy_s(mb->loaiMB, loaiMoi, sizeof(mb->loaiMB));
         break;
     }
 
     // --- So cho ---
-    long int soChoMoi_int; char* endp;
+    int soChoMoi_int;
     while (true) {
         gotoXY(35, 10);
         if (!cin.getline(soChoMoi, sizeof(soChoMoi))) {
@@ -710,8 +710,8 @@ void FormHieuChinhMayBay(DSMB& dsmb) {
         }
         if (IsEmpty(soChoMoi)) break;
       
-        soChoMoi_int = strtol(soChoMoi, &endp, 10); //strtol: chuyen kieu chuoi ve int
-        if (endp == soChoMoi || *endp != '\0' || soChoMoi_int < 20 || soChoMoi_int > 2000) {
+        soChoMoi_int = ChuyenChuoiVeSo(soChoMoi);
+        if ( soChoMoi_int < 20 || soChoMoi_int > 2000) {
             gotoXY(5, 12); cout << "So cho moi khong hop le (>=20 & <=2000)!"; ClearAt(35, 10, 5);  ShowCur(0);
             continue;
         }
@@ -983,7 +983,7 @@ void FormThemChuyenBay(PTRCB& dscb, const DSMB& dsmb)
     gotoXY(5, 9);  cout << "PHUT  (MM)                : ";
     gotoXY(5, 10);  cout << "SAN BAY DEN (<=20 ky tu)    : ";
     gotoXY(5, 11);  cout << "SO HIEU MAY BAY (VD: VN-123): ";
-    gotoXY(5, 12);  cout << "TRANG THAI (0 HUY / 1 CON VE / 2 HET VE / 3 HOAN TAT): ";
+
    
     char maCB[MAX_MA_CB_LENGTH] = { 0 };
     char sanBayDen[MAX_SANBAY_DEN] = { 0 };
@@ -1147,7 +1147,9 @@ void FormThemChuyenBay(PTRCB& dscb, const DSMB& dsmb)
     gotoXY(5, 14); cout << "=> Da them chuyen bay. Nhan phim bat ky..."; _getch(); ShowCur(0);
 }
 
-void FormHieuChinhChuyenBay(PTRCB& dscb, const DSMB& dsmb)
+//=====HIEU CHINH CHUYEN BAY========
+
+void FormHieuChinhChuyenBay   (PTRCB& dscb, const DSMB& dsmb)
 {
     ResetColor(); system("cls"); ShowCur(1);
     gotoXY(5, 2); cout << "=== HIEU CHINH CHUYEN BAY ===";
@@ -1160,64 +1162,205 @@ void FormHieuChinhChuyenBay(PTRCB& dscb, const DSMB& dsmb)
     if (!node) { gotoXY(5, 6); cout << "Khong tim thay!"; _getch(); ShowCur(0); return; }
 
     ChuyenBay& c = node->cb;
+    TrangThaiChuyenBay ttcb;
+
+    ThoiGian tg;
+
+    char sanBayDen[MAX_SANBAY_DEN];
+    char soHieuMB[MAX_SO_HIEU_MB];
 
     gotoXY(5, 6);  cout << "(Enter bo qua de giu nguyen)";
-    gotoXY(5, 8);  cout << "Ngay (YYYY MM DD)  [cu: " << c.ngayGioKhoiHanh.nam << "-" << c.ngayGioKhoiHanh.thang << "-" << c.ngayGioKhoiHanh.ngay << "]: ";
-    gotoXY(5, 9);  cout << "Gio  (HH MM)       [cu: " << c.ngayGioKhoiHanh.gio << ":" << c.ngayGioKhoiHanh.phut << "]: ";
-    gotoXY(5, 10); cout << "San bay den        [cu: " << c.sanBayDen << "]: ";
-    gotoXY(5, 11); cout << "So hieu may bay    [cu: " << c.soHieuMB << "]: ";
+    gotoXY(5, 7); cout <<  "Ma chuyen bay      [cu: " << c.maCB << "]                 : ";
+    gotoXY(5, 8);  cout << "Nam    (YYYY)      [cu: " << c.ngayGioKhoiHanh.nam << "]  : ";
+    gotoXY(5, 9); cout << "Thang   (MM)        [cu: " << c.ngayGioKhoiHanh.thang << "]: ";
+    gotoXY(5, 10); cout << "Ngay   (DD)        [cu: " << c.ngayGioKhoiHanh.ngay << "] : ";
+    gotoXY(5, 11);  cout << "Gio   (HH)        [cu: " << c.ngayGioKhoiHanh.gio << "]  : ";
+    gotoXY(5, 12); cout << "Phut   (MI)        [cu: " << c.ngayGioKhoiHanh.phut << "] : ";
+    gotoXY(5, 13); cout << "San bay den        [cu: " << c.sanBayDen << "]            : ";
+    gotoXY(5, 14); cout << "So hieu may bay    [cu: " << c.soHieuMB << "]             : ";
+    
+    // Ma chuyen bay
+    char maCB_HieuChinh[MAX_MA_CB_LENGTH];
+
+   
+    while (true) {
+        ClearAt(40, 7, 50);
+        
+
+        if (!cin.getline(maCB_HieuChinh, sizeof(maCB_HieuChinh))) {
+
+            // người dùng gõ quá dài -> failbit
+            cin.clear();
+            cin.ignore(1000, '\n');
+            gotoXY(5, 17); cout << "Nhap qua dai (<= 15). Thu lai.         ";
+            ClearAt(40, 7, 50);
+            continue;
+        }
+        if (IsEmpty(maCB_HieuChinh)) break;
+
+        NormalizeSpaces(maCB_HieuChinh); UpperCase(maCB_HieuChinh);
+
+        if (KiemTraDoDai(maCB_HieuChinh, 3, 6) == 0 ||
+            !(isalpha((unsigned char)maCB_HieuChinh[0]) && isalpha((unsigned char)maCB_HieuChinh[1])) ||
+            KiemTraPhanSauLaChuSo(2, (int)strlen(maCB_HieuChinh), maCB_HieuChinh) == false)
+        {
+            gotoXY(5, 17); cout << "  >> Sai dinh dang! (VD: <KT1><KT2><1-4 so>):               ";
+            continue;
+        }
+
+        if (FindCBByMa(dscb, maCB_HieuChinh)) {
+            gotoXY(5, 17); cout << "  >> Ma CB bi trung!                                           ";
+            continue;
+        }
+        ClearAt(5, 17, 60);
+        strncpy_s(c.maCB, maCB_HieuChinh, sizeof(maCB_HieuChinh));
+        break;
+    }
+
+
+    // NHAP THOI GIAN
+    while (true)
+    {
+        string err;
+        int y, m, d, hh, mi;
+
+        // NAM
+        ClearAt(40, 8, 50);
+        if (!(cin >> y)) {
+            cin.clear(); cin.ignore(1000, '\n');
+            gotoXY(5, 17); cout << "  >> Nam khong hop le!                            ";
+            continue;
+        }
+
+        // THANG
+        gotoXY(40, 9); ClearAt(40, 9, 50);
+        if (!(cin >> m)) {
+            cin.clear(); cin.ignore(1000, '\n');
+            gotoXY(5, 17); cout << "  >> Thang khong hop le!                          ";
+            continue;
+        }
+
+        // NGAY
+        gotoXY(40, 10); ClearAt(40, 10, 50);
+        if (!(cin >> d)) {
+            cin.clear(); cin.ignore(1000, '\n');
+            gotoXY(5, 17); cout << "  >> Ngay khong hop le!                           ";
+            continue;
+        }
+
+        // GIO
+        gotoXY(40, 11); ClearAt(40, 11, 50);
+        if (!(cin >> hh)) {
+            cin.clear(); cin.ignore(1000, '\n');
+            gotoXY(5, 17); cout << "  >> Gio khong hop le!                            ";
+            continue;
+        }
+
+        // PHUT
+        gotoXY(40, 12); ClearAt(40, 12, 50);
+        if (!(cin >> mi)) {
+            cin.clear(); cin.ignore(1000, '\n');
+            gotoXY(5, 17); cout << "  >> Phut khong hop le!                           ";
+            continue;
+        }
+
+        
+
+        tg.nam = y; tg.thang = m; tg.ngay = d; tg.gio = hh; tg.phut = mi;
+
+        // Kiem tra: lich hop le: neu o qua khu thi ttcb = hoan tat, o tuong lai thi la con ve
+
+
+        if (!flight_time::ValidateFlightDateTime(y, m, d, hh, mi, err, ttcb)) {
+            gotoXY(5, 17); cout << "  >> " << err << string(20, ' ');
+            continue;
+        }
+        if (ttcb == CON_VE) {
+            if (!flight_time::ValidateFlightDateTimeLeadHours(tg, 12, err, true)) {
+                gotoXY(5, 17); cout << "  >> " << err << string(20, ' ');
+                continue;
+            }
+        }
+
+        // Xoa thong bao loi va thoat vong
+        ClearAt(5, 17, 70);
+        break;
+    }
+    cin.ignore(1000, '\n');
+    // SAN BAY DEN
+    while (true)
+    {
+        ClearAt(40, 13,50);
+        gotoXY(40, 13); cin.getline(sanBayDen, sizeof(sanBayDen));
+
+        if (IsEmpty(sanBayDen)) break;
+
+        if ( !isalpha((unsigned char)sanBayDen[0])) {
+            ClearAt(5, 17, 50);
+            gotoXY(5, 17); cout << "  >> San bay den khong hop le!                      ";
+            continue;
+        }
+        RemoveAllSpaces(sanBayDen); UpperCase(sanBayDen);
+        ClearAt(5, 17, 60);
+        strncpy_s(c.sanBayDen, sanBayDen, sizeof(sanBayDen));
+
+        break;
+    }
+
+    // SO HIEU MB
+    int idxMB = -1;
+    int soChoMax = 0;
+    while (true)
+    {
+        ClearAt(40, 14, 60);
+        gotoXY(40, 14); cin.getline(soHieuMB, sizeof(soHieuMB));
+
+        if (IsEmpty(soHieuMB)) break;
+
+        RemoveAllSpaces(soHieuMB); UpperCase(soHieuMB);
+
+        idxMB = FindIndexBySoHieu_MB(dsmb, soHieuMB);
+        if (idxMB < 0) {
+            ClearAt(5, 17, 60);
+            gotoXY(5, 17); cout << "  >> Khong tim thay may bay trong DSMB!";
+            continue;
+        }
+
+        // === KIỂM TRA TRÙNG TRONG DANH SÁCH CHUYẾN BAY TRONG 12 GIỜ ===
+        bool trung = false;
+        string errCheck;
+        for (nodeChuyenBay* p = dscb; p != NULL; p = p->next) {
+            // bỏ qua chính chuyến bay đang chỉnh sửa
+            if (strcmp(p->cb.maCB, c.maCB) == 0) continue;
+
+            if (strcmp(p->cb.soHieuMB, soHieuMB) == 0) {
+                int diffMin = flight_time::MinutesDiff(tg, p->cb.ngayGioKhoiHanh, errCheck);
+                if (abs(diffMin) < 12 * 60) { // 12 giờ = 720 phút
+                    trung = true;
+                    break;
+                }
+            }
+        }
+
+        if (trung) {
+            ClearAt(5, 17, 70);
+            gotoXY(5, 17); cout << "  >> So hieu MB da duoc su dung trong vong 12 gio!";
+            continue;
+        }
+
+        // nếu qua được hết các kiểm tra thì chấp nhận
+        soChoMax = dsmb.nodes[idxMB]->soCho; // số chỗ theo MB
+
+        strncpy_s(c.soHieuMB, soHieuMB, sizeof(soHieuMB));
+
+        ClearAt(5, 17, 70);
+        break;
+    }
+
     
 
-    // Date
-    char line[64];
-    gotoXY(38, 8);
-    if (cin.getline(line, sizeof(line)) && !IsEmpty(line)) {
-        int y, m, d; if (sscanf_s(line, "%d %d %d", &y, &m, &d) == 3) {
-            ThoiGian t = c.ngayGioKhoiHanh; t.nam = y; t.thang = m; t.ngay = d;
-            if (ValidDateTime(t)) c.ngayGioKhoiHanh = t;
-        }
-    }
-    // Time
-    gotoXY(38, 9);
-    if (cin.getline(line, sizeof(line)) && !IsEmpty(line)) {
-        int hh, mm; if (sscanf_s(line, "%d %d", &hh, &mm) == 2) {
-            ThoiGian t = c.ngayGioKhoiHanh; t.gio = hh; t.phut = mm;
-            if (ValidDateTime(t)) c.ngayGioKhoiHanh = t;
-        }
-    }
-    // San bay den
-    gotoXY(28, 10);
-    if (cin.getline(line, sizeof(line)) && !IsEmpty(line)) {
-        NormalizeSpaces(line); UpperCase(line);
-        if (isalpha((unsigned char)line[0])) strncpy_s(c.sanBayDen, line, sizeof(c.sanBayDen) - 1);
-    }
-    // So hieu MB (đổi máy bay => phải đủ chỗ)
-    gotoXY(28, 11);
-    if (cin.getline(line, sizeof(line)) && !IsEmpty(line)) {
-        RemoveAllSpaces(line); UpperCase(line);
-        int idx = FindIndexBySoHieu_MB(dsmb, line);
-        if (idx >= 0) {
-            int newCap = dsmb.nodes[idx]->soCho;
-            if (newCap >= c.dsVe.soVeDaDat) {
-                strncpy_s(c.soHieuMB, line, sizeof(c.soHieuMB) - 1);
-                c.soChoMax = newCap;
-                // Re-alloc mảng vé nếu cần
-                Ve* newArr = new Ve[newCap];
-                int copyN = c.dsVe.soVeDaDat; // chỉ copy số vé đã đặt (chưa lưu chi tiết tại file)
-                for (int i = 0; i < copyN; ++i) newArr[i] = c.dsVe.danhSach[i];
-                delete[] c.dsVe.danhSach;
-                c.dsVe.danhSach = newArr;
-                if (c.dsVe.soVeDaDat == c.soChoMax) c.ttcb = HET_VE;
-                else if (c.ttcb == HET_VE) c.ttcb = CON_VE;
-            }
-            else {
-                gotoXY(5, 14); cout << "May bay moi khong du suc chua (nho hon so ve da dat)!";
-            }
-        }
-    }
-   
-
-    gotoXY(5, 16); cout << "Da cap nhat. Nhan phim bat ky..."; _getch(); ShowCur(0);
+    ClearAt(5, 17, 50); gotoXY(5, 17); cout << "Da Hieu chinh chuyen bay. Nhan phim bat ki de thoat";  _getch(); ShowCur(0);
+    
 }
 
 void FormXoaChuyenBay(PTRCB& dscb)
@@ -1229,7 +1372,7 @@ void FormXoaChuyenBay(PTRCB& dscb)
     if (strcmp(maCB, "0") == 0 || IsEmpty(maCB)) { ShowCur(0); return; }
     RemoveAllSpaces(maCB); UpperCase(maCB);
 
-    nodeChuyenBay* node = FindCBByMa(dscb, maCB);
+    PTRCB node = FindCBByMa(dscb, maCB);
     if (!node) { gotoXY(5, 6); cout << "Khong tim thay!"; _getch(); ShowCur(0); return; }
 
     // Business rule đơn giản: Không cho xóa nếu đã có vé đặt
@@ -1279,7 +1422,7 @@ void FormDatVe(PTRCB& dscb)
             !(isalpha((unsigned char)maCB[0]) && isalpha((unsigned char)maCB[1]) && maCB[2] == SPACE_IN_ASCII) ||
             KiemTraPhanSauLaChuSo(3, (int)strlen(maCB), maCB) == false)
         {
-            gotoXY(5, 13); cout << "  >> Sai dinh dang! (VD: <KT1><KT2><space><1-4 chu so>)           ";
+            gotoXY(5, 13); cout << "  >> Sai dinh dang! (VD: <KT1><KT2><1-4 chu so>)           ";
             continue;
         }
         if (!(node = FindCBByMa(dscb,maCB)) ) {
