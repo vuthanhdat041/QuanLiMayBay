@@ -85,6 +85,15 @@ bool HanhKhachDatToiDa1CB(PTRCB dscb, char* soCMND);
 
 void FormDatVe(PTRCB& dscb);
 void FormXemDanhSachVe(PTRCB dscb);
+
+//=======KHACH HANG========
+
+bool InsertHK(treeHK& t, const HanhKhach& x);
+bool SaveFile_KH()
+bool LoadFile_KH(string filename, treeHK& dskh);
+void XemDSKH(treeHK t);
+void EncodeSpaces(char* s);
+void DecodeSpaces(char* s);
 // =============================
 int main() {
     DSMB dsmb;
@@ -354,6 +363,7 @@ void screen_hanhkhach()
     int my = 3;
     n_box(mx, my, w, h, t_color, b_color, opts, sl);
 
+    XemDSKH(treeHK hk);
     // Điều khiển phím cho menu
     int xp = mx, yp = my, xcu = xp, ycu = yp;
     bool needRedraw = true;
@@ -376,10 +386,10 @@ void screen_hanhkhach()
             }
             else if (c == 13) {
                 int idx = (yp - my) / step;
-                if (idx == 0) { ShowCur(1); /*FormThemHanhKhach();*/ break; }
+                if (idx == 0) { ShowCur(1); /*FormThemHanhKhach(); */ break; }
                 else if (idx == 1) { ShowCur(1); /*FormHieuChinhHanhKhach();*/ break; }
                 else if (idx == 2) { ShowCur(1); /*FormXoaHanhKhach();*/ break; }
-                else if (idx == 3) { return; } // QUAY LAI
+                else if (idx == 3) { return; } 
             }
         }
     }
@@ -1627,14 +1637,84 @@ bool HanhKhachDatToiDa1CB(PTRCB dscb, char* soCMND) {
 
 
 // khachhang.txt: m?i dòng 1 khách, duy?t cây b?ng inorder
+int CountKH(treeHK t) {
+    if (!t) return 0;
+    return 1 + CountKH(t->left) + CountKH(t->right);
+}
+
+// Ghi cây khách hàng với cột rộng 30
 void _writeKH_inorder(ofstream& f, treeHK t) {
     if (!t) return;
     _writeKH_inorder(f, t->left);
-    f << t->hk.soCM << " " << t->hk.Ho << " " << t->hk.Ten << " " << t->hk.Phai << '\n';
+
+    // Encode tên: thay ' ' -> '_' để tránh bị cắt khi load
+    char tenEncoded[MAX_TEN_LENGTH];
+    strcpy_s(tenEncoded, t->hk.Ten);
+    EncodeSpaces(tenEncoded);
+
+    f << left
+        << setw(30) << t->hk.soCM
+        << setw(30) << t->hk.Ho
+        << setw(30) << tenEncoded
+        << setw(30) << t->hk.Phai
+        << "\n";
+
     _writeKH_inorder(f, t->right);
 }
+
 void SaveFile_KH(treeHK dskh) {
-    ofstream f("khachhang.txt");
+    ofstream f("DSKH.txt");
     _writeKH_inorder(f, dskh);
     f.close();
 }
+
+
+// Them Khach hang
+static int cmpSoCM(const char* a, const char* b) { return _stricmp(a, b); }
+
+bool InsertHK(treeHK& t, const HanhKhach& x) {
+    if (!t) {
+        t = new nodeHK;
+        t->hk = x;
+        t->left = t->right = nullptr;
+        return true;
+    }
+    int c = cmpSoCM(x.soCM, t->hk.soCM);
+    if (c == 0) return false;         // trùng CMND -> bỏ qua
+    if (c < 0)  return InsertHK(t->left, x);
+    else        return InsertHK(t->right, x);
+}
+
+
+// ==== LOAD: doc khachhang.txt (moi dong: soCM Ho Ten Phai) ====
+bool LoadFile_KH(string filename, treeHK & dskh) {
+    filename = "DSKH.txt";
+    dskh = nullptr;
+    ifstream fin(filename);
+    if (!fin.is_open()) return false;
+
+    HanhKhach kh{};
+    int loaded = 0;
+
+    while (fin >> kh.soCM >> kh.Ho >> kh.Ten >> kh.Phai) {
+        DecodeSpaces(kh.Ten);
+        InsertHK(dskh, kh); 
+        loaded++;
+    }
+    fin.close();
+    return loaded > 0;
+}
+
+// ==== IN RA MAN HINH (inorder don gian) ====
+void XemDSKH(treeHK t) {
+    if (!t) return;
+    XemDSKH(t->left);
+    cout << left
+        << setw(14) << t->hk.soCM
+        << setw(12) << t->hk.Ho
+        << setw(16) << t->hk.Ten
+        << setw(6) << t->hk.Phai
+        << "\n";
+    XemDSKH(t->right);
+}
+
