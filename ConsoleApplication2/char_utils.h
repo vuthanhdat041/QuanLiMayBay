@@ -173,4 +173,19 @@ int ChuyenChuoiVeSo(char soCanChuyen_str[]) {
     }
     return soCanChuyen_int;
 }
+
+// chuyến dấu cách thành "_" ví dụ: Thanh Dat -> Thanh_Dat
+void EncodeSpaces(char* s) {
+    for (int i = 0; s[i]; i++) {
+        if (s[i] == ' ') s[i] = '_';
+    }
+}
+
+// ngược lại của Encode, ví dụ: Kieu_Dung -> Kieu Dung
+void DecodeSpaces(char* s) {
+    for (int i = 0; s[i]; i++) {
+        if (s[i] == '_') s[i] = ' ';
+    }
+}
+
 #endif // CHAR_UTILS_HPP

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #ifndef MODEL_HPP
 #define MODEL_HPP
 
