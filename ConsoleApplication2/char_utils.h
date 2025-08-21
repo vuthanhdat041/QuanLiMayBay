@@ -188,4 +188,12 @@ void DecodeSpaces(char* s) {
     }
 }
 
+bool IsAllDigits(const char* s) {
+    int len = 0;
+    for (int i = 0; s[i]; ++i) {
+        if (!isdigit((unsigned char)s[i])) return false;
+        ++len;
+    }
+    return len > 0;
+}
 #endif // CHAR_UTILS_HPP

@@ -1,4 +1,7 @@
-3
+6
 012345678901                  Thanh                         Van                           Nam                           
+012345678912                  nguyen                        van                           Nu                            
+022204003055                  vu                            dat                           Nam                           
 123456789012                  Nguyen                        Thanh_Dat                     Nam                           
 987654321000                  Le                            Thi_Hoa                       Nu                            
+987654321012                  nguyen                        thi                           Nu                            
