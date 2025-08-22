@@ -196,4 +196,20 @@ bool IsAllDigits(const char* s) {
     }
     return len > 0;
 }
+
+void Inhoachudau(char a[]) {
+    for (int i = 0; i < strlen(a); i++) {
+        if (i == 0 || (i > 0 && a[i - 1] == ' ')) {//neu la ky tu dau tien cua chuôi hoac ky tu ngay sau ky tu cach 
+            if (a[i] >= 'a' && a[i] <= 'z')//neu la ky tu viet thuong doi thanh viet hoa
+                a[i] = a[i] - 32;
+        }
+        else {
+            //neu chu cai khong phai o dau moi tu viet hoa chuyen thanh viet thuong
+            if (a[i] >= 'A' && a[i] <= 'Z') {
+                a[i] = a[i] + 32;
+            }
+
+        }
+    }
+}
 #endif // CHAR_UTILS_HPP

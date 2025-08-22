@@ -34,6 +34,14 @@ void menu();
 void thanh_sang(int x, int y, int w, int h, int b_color, const string& nd);
 void ClearAt(int x, int y, int w);
 
+/*
+static bool IsSeatTaken(const ChuyenBay& cb, int ghe);
+static void ShowSeatMap(const ChuyenBay& cb, int x = 5, int y = 16, int perRow = 10);
+static int FindFirstFreeSeat(const ChuyenBay& cb);
+
+static bool IsSeatTaken(const ChuyenBay& cb, int ghe);
+static void ShowSeatMap(const ChuyenBay & cb, int x = 5, int y = 16, int perRow = 10);
+3*/
 //May bay
 void FreeDSMB(DSMB& dsmb);
     //them may bay
@@ -87,6 +95,7 @@ bool HanhKhachDatToiDa1CB(PTRCB dscb, char* soCMND);
 
 void FormDatVe(PTRCB& dscb);
 void FormXemDanhSachVe(PTRCB dscb);
+void FormHuyVe(PTRCB dscb);
 
 //=======KHACH HANG========
 
@@ -95,11 +104,10 @@ int CountKH(treeHK t);
 
 int cmpSoCM(const char* a, const char* b);
 bool InsertHK(treeHK& t, const HanhKhach& x);
-bool InsertHK(treeHK& t, const HanhKhach& x);
 int CountKH(treeHK t);
 void _writeKH_inorder(ofstream& f, treeHK t);
 bool SaveFile_KH(string filePath, treeHK dskh);
-bool LoadFile_KH(const string& filename, treeHK& dskh);
+bool LoadFile_KH(string filePath, treeHK& dskh);
 void _inorder_print(treeHK t, int x0, int y0, int& row);
 void XemDSKH(treeHK t, int x0, int y0);
 
@@ -342,7 +350,8 @@ void screen_chuyenbay()
                     else if (idx == 2) { ShowCur(1); FormXoaChuyenBay(dscb);                SaveFile_CB("DSCB.txt", dscb); break; }
                     else if (idx == 3) { ShowCur(1); FormDatVe(dscb);                       SaveFile_CB("DSCB.txt", dscb); break; } // <-- ĐẶT VÉ
                     else if (idx == 4) { ShowCur(1); FormXemDanhSachVe(dscb);                                        break; } // <-- XEM DS VÉ
-                    else if (idx == 5) { SaveFile_CB( "DSCB.txt",dscb); FreeDSCB(dscb); FreeDSMB(dsmb); return; }          // QUAY LẠI
+                    else if (idx == 5)  {ShowCur(1); FormHuyVe(dscb); SaveFile_CB("DSCB.txt", dscb); } // Hủy vé
+                    else if (idx == 6) { SaveFile_CB( "DSCB.txt",dscb); FreeDSCB(dscb); FreeDSMB(dsmb); return; }          // QUAY LẠI
                 }
             }
         }
@@ -351,62 +360,65 @@ void screen_chuyenbay()
 
 
 void screen_hanhkhach() {
-    ResetColor(); ShowCur(0); system("cls");
-    gotoXY(5, 1);  cout << "=== MAN HINH: HANH KHACH ===";
-
-    // Nạp dữ liệu từ file (DSKH.txt)
+    
     treeHK dshk = NULL;
     LoadFile_KH("DSKH.txt", dshk);
-
-    // MENU (trên cùng bên trái)
-    const int w = 26, h = 2, step = 2;
-    const int t_color = 11, b_color = 1, b_color_sang = 75;
-    const int sl = 4;
-    string opts[sl] = {
-        "THEM HANH KHACH",
-        "HIEU CHINH HANH KHACH",
-        "XOA HANH KHACH",
-        "QUAY LAI"
-    };
-
-    const int tableX = 5;
-    int mx = tableX;
-    int my = 3;
-    n_box(mx, my, w, h, t_color, b_color, opts, sl);
-
-    // Vị trí bảng dưới menu
-    int menuBottom = my + (sl - 1) * step + h;
-    int bx = 5, by = menuBottom + 2;
-
-    // Hiển thị bảng
-    XemDSKH(dshk, bx, by);
-
-    // Điều khiển phím cho menu
-    int xp = mx, yp = my, xcu = xp, ycu = yp;
-    bool needRedraw = true;
-
     while (true) {
-        if (needRedraw) {
-            int idxOld = (ycu - my) / step;
-            int idxNew = (yp - my) / step;
-            thanh_sang(xcu, ycu, w, h, b_color, opts[idxOld]);
-            thanh_sang(xp, yp, w, h, b_color_sang, opts[idxNew]);
-            xcu = xp; ycu = yp; needRedraw = false;
-        }
-        if (_kbhit()) {
-            char c = _getch();
-            if (c == 27) return; // ESC thoát
-            if (c == -32 || c == (char)224) {
-                needRedraw = true; c = _getch();
-                if (c == 72) { if (yp != my) yp -= step; else yp = my + step * (sl - 1); }
-                else if (c == 80) { if (yp != my + step * (sl - 1)) yp += step; else yp = my; }
+        ResetColor(); ShowCur(0); system("cls");
+        gotoXY(5, 1);  cout << "=== MAN HINH: HANH KHACH ===";
+
+
+
+        // MENU (trên cùng bên trái)
+        const int w = 26, h = 2, step = 2;
+        const int t_color = 11, b_color = 1, b_color_sang = 75;
+        const int sl = 4;
+        string opts[sl] = {
+            "THEM HANH KHACH",
+            "HIEU CHINH HANH KHACH",
+            "XOA HANH KHACH",
+            "QUAY LAI"
+        };
+
+        const int tableX = 5;
+        int mx = tableX;
+        int my = 3;
+        n_box(mx, my, w, h, t_color, b_color, opts, sl);
+
+        // Vị trí bảng dưới menu
+        int menuBottom = my + (sl - 1) * step + h;
+        int bx = 5, by = menuBottom + 2;
+
+        // Hiển thị bảng
+        XemDSKH(dshk, bx, by);
+
+        // Điều khiển phím cho menu
+        int xp = mx, yp = my, xcu = xp, ycu = yp;
+        bool needRedraw = true;
+
+        while (true) {
+            if (needRedraw) {
+                int idxOld = (ycu - my) / step;
+                int idxNew = (yp - my) / step;
+                thanh_sang(xcu, ycu, w, h, b_color, opts[idxOld]);
+                thanh_sang(xp, yp, w, h, b_color_sang, opts[idxNew]);
+                xcu = xp; ycu = yp; needRedraw = false;
             }
-            else if (c == 13) {
-                int idx = (yp - my) / step;
-                if (idx == 0) { ShowCur(1); FormThemHanhKhach(dshk); SaveFile_KH("DSKH.txt", dshk); break; }
-                else if (idx == 1) { ShowCur(1); /*FormHieuChinhHanhKhach();*/ break; }
-                else if (idx == 2) { ShowCur(1); /*FormXoaHanhKhach();*/ break; }
-                else if (idx == 3) { return; } // QUAY LAI
+            if (_kbhit()) {
+                char c = _getch();
+                if (c == 27) return; // ESC thoát
+                if (c == -32 || c == (char)224) {
+                    needRedraw = true; c = _getch();
+                    if (c == 72) { if (yp != my) yp -= step; else yp = my + step * (sl - 1); }
+                    else if (c == 80) { if (yp != my + step * (sl - 1)) yp += step; else yp = my; }
+                }
+                else if (c == 13) {
+                    int idx = (yp - my) / step;
+                    if (idx == 0) { ShowCur(1); FormThemHanhKhach(dshk); SaveFile_KH("DSKH.txt", dshk); break; }
+                    else if (idx == 1) { ShowCur(1); /*FormHieuChinhHanhKhach();*/ break; }
+                    else if (idx == 2) { ShowCur(1); /*FormXoaHanhKhach();*/ break; }
+                    else if (idx == 3) { return; } // QUAY LAI
+                }
             }
         }
     }
@@ -515,9 +527,9 @@ bool DocDSMB(DSMB& dsmb, string filePath )
         strncpy_s(soChoStr, line + MAX_SO_HIEU_MB + MAX_LOAI_MB -1, sizeof(soChoStr) - 1);
         soChoStr[sizeof(soChoStr) - 1] = '\0';
 
-        Trim(soHieu);
-        Trim(loai);
-        Trim(soChoStr);
+        RemoveAllSpaces(soHieu);
+        RemoveAllSpaces(loai);
+        RemoveAllSpaces(soChoStr);
 
         int soCho = atoi(soChoStr);
 
@@ -641,7 +653,7 @@ void FormThemMayBay(DSMB& dsmb) {
     
     while (true)
     {
-        gotoXY(28, 7); cin.getline(loaiMayBay, MAX_LOAI_MB);
+        gotoXY(28, 7);
         if (!cin.getline(loaiMayBay, sizeof(loaiMayBay))) {
             // người dùng gõ quá dài -> failbit
             cin.clear();
@@ -908,7 +920,7 @@ bool LoadFile_CB(string tenfile, PTRCB& dscb) {
         ds->cb.ttcb = (TrangThaiChuyenBay)tempTT;
 
         // Cấp phát mảng vé
-        ds->cb.dsVe.danhSach = new Ve[ds->cb.dsVe.soVeDaDat];
+        ds->cb.dsVe.danhSach = new Ve[ds->cb.soChoMax];
 
         for (int j = 0; j < ds->cb.dsVe.soVeDaDat; j++) {
             string tt;
@@ -1470,25 +1482,68 @@ void FormXoaChuyenBay(PTRCB& dscb)
     _getch(); ShowCur(0);
 }
 
+// ======= TÌM KHÁCH HÀNG THEO CMND =======
+nodeHK* FindHK_BySoCM(treeHK t, const char* soCM) {
+    if (!t) return nullptr;
+    int c = strcmp(soCM, t->hk.soCM);
+    if (c == 0) return t;
+    if (c < 0)  return FindHK_BySoCM(t->left, soCM);
+    return FindHK_BySoCM(t->right, soCM);
+}
+
+// ======= HIỂN THỊ THÔNG TIN KH =======
+static void ShowKH(const HanhKhach& hk, int x = 5, int y = 8) {
+    gotoXY(x, y);   cout << "Thong tin KH: ";
+    gotoXY(x, y + 1);   cout << "  SO CM : " << hk.soCM;
+    gotoXY(x, y + 2);   cout << "  HO    : " << hk.Ho;
+    gotoXY(x, y + 3);   cout << "  TEN   : " << hk.Ten;
+    gotoXY(x, y + 4);   cout << "  PHAI  : " << hk.Phai;
+}
+
+// ======= GHẾ: KIỂM TRA & TÌM GHẾ TRỐNG =======
+static bool IsSeatTaken(const ChuyenBay& cb, int ghe) {
+    for (int i = 0; i < cb.dsVe.soVeDaDat; ++i)
+        if (cb.dsVe.danhSach[i].trangThai && cb.dsVe.danhSach[i].soGhe == ghe) return true;
+    return false;
+}
+static int FindFirstFreeSeat(const ChuyenBay& cb) {
+    for (int g = 1; g <= cb.soChoMax; ++g) if (!IsSeatTaken(cb, g)) return g;
+    return -1;
+}
+
+
+
+
+static void ShowSeatMap(const ChuyenBay& cb, int x, int y, int perRow) {
+    gotoXY(x, y);     cout << "So cho: " << cb.soChoMax << " | Da dat: " << cb.dsVe.soVeDaDat;
+    int row = 0;
+    for (int g = 1; g <= cb.soChoMax; ++g) {
+        if ((g - 1) % perRow == 0) { row++; gotoXY(x, y + row); }
+        if (IsSeatTaken(cb, g)) cout << setw(4) << "xx";
+        else                     cout << setw(4) << g;
+    }
+}
+
+
 void FormDatVe(PTRCB& dscb)
 {
     ResetColor(); system("cls"); ShowCur(1);
     gotoXY(5, 2); cout << "=== DAT VE ===";
     gotoXY(5, 4); cout << "Nhap MA CHUYEN BAY: ";
 
+    // --- NAP DANH SACH KHACH HANG (de tim/ them neu chua co) ---
+    treeHK dskh = NULL;
+    LoadFile_KH("DSKH.txt", dskh);
+
     // --- Chon chuyen bay ---
     char maCB[MAX_MA_CB_LENGTH];
     PTRCB node;
-    // MA CB (theo format anh đang dùng: 2 chữ + ' ' + số)
     while (true)
     {
         ClearAt(24, 4, 50);
         gotoXY(24, 4);
         if (!cin.getline(maCB, sizeof(maCB))) {
-            
-            // người dùng gõ quá dài -> failbit
-            cin.clear();
-            cin.ignore(1000, '\n');
+            cin.clear(); cin.ignore(1000, '\n');
             gotoXY(5, 8); cout << "Nhap qua dai (<= 15). Thu lai.         ";
             ClearAt(24, 4, 50);
             continue;
@@ -1499,19 +1554,16 @@ void FormDatVe(PTRCB& dscb)
             !(isalpha((unsigned char)maCB[0]) && isalpha((unsigned char)maCB[1])) ||
             KiemTraPhanSauLaChuSo(2, (int)strlen(maCB), maCB) == false)
         {
-            gotoXY(5, 8); cout << "  >> Sai dinh dang! (VD: <KT1><KT2><1-4 so>):               ";
+            gotoXY(5, 8); cout << "  >> Sai dinh dang! (VD: <KT1><KT2><1-4 so>):    ";
             continue;
         }
-        if (!(node = FindCBByMa(dscb,maCB)) ) {
-            gotoXY(5, 8); cout << "Khong tim thay chuyen bay                             ";
+        if (!(node = FindCBByMa(dscb, maCB))) {
+            gotoXY(5, 8); cout << "Khong tim thay chuyen bay                         ";
             continue;
         }
-
         ClearAt(5, 8, 60);
         break;
     }
-
-
     ChuyenBay& cb = node->cb;
 
     // --- Kiem tra trang thai chuyen bay ---
@@ -1528,6 +1580,11 @@ void FormDatVe(PTRCB& dscb)
     if (cb.dsVe.danhSach == nullptr) {
         cb.dsVe.danhSach = new Ve[cb.soChoMax];
         cb.dsVe.soVeDaDat = 0;
+        for (int i = 0; i < cb.soChoMax; ++i) {
+            cb.dsVe.danhSach[i].soCMND[0] = '\0';
+            cb.dsVe.danhSach[i].soGhe = 0;
+            cb.dsVe.danhSach[i].trangThai = false;
+        }
     }
 
     // --- Full chua? ---
@@ -1541,61 +1598,207 @@ void FormDatVe(PTRCB& dscb)
     char soCMND[MAX_CMND_LENGTH];
     while (true) {
         gotoXY(5, 6);  cout << "So CMND (12 chu so): ";
-        
+        ClearAt(28, 6, 50);
+
         if (!cin.getline(soCMND, sizeof(soCMND))) {
-            RemoveAllSpaces(soCMND); 
-            // người dùng gõ quá dài -> failbit
-            cin.clear();
-            cin.ignore(1000, '\n');
+            cin.clear(); cin.ignore(1000, '\n');
             gotoXY(5, 8); cout << "Khong nhap qua 12 so         ";
-            ClearAt(28, 6, 50);
             continue;
         }
-        // check 12 digits
+        RemoveAllSpaces(soCMND);
+
+        // 1) 12 chữ số
         int n = (int)strlen(soCMND);
         bool ok = (n == 12);
-
-        for (int i = 0; i < n && ok; ++i) {
-            if (!isdigit((unsigned char)soCMND[i])) {
-                ok = false;
-            }
-        }
+        for (int i = 0; i < n && ok; ++i)
+            if (!isdigit((unsigned char)soCMND[i])) ok = false;
 
         if (!ok) {
             ClearAt(5, 8, 60);
-            gotoXY(5, 8);
-            cout << "  >> CMND khong hop le! (yeu cau 12 chu so)";
+            gotoXY(5, 8); cout << "  >> CMND khong hop le! (yeu cau 12 chu so)";
             continue;
         }
 
-
-        // duplicate check
+        // 2) Không trùng trong chính chuyến này (mỗi khách 1 vé trên chuyến)
         bool dup = false;
         for (int i = 0; i < cb.dsVe.soVeDaDat; ++i)
             if (strcmp(cb.dsVe.danhSach[i].soCMND, soCMND) == 0) { dup = true; break; }
-
-        if (dup) { ClearAt(5, 8, 60); gotoXY(5, 8); cout << "  >> CMND da ton tai tren chuyen nay!             "; continue; }
-
-        if (HanhKhachDatToiDa1CB(dscb, soCMND)) {
-            ClearAt(5, 8, 60);
-            gotoXY(5, 8); cout << " >> 1 CMND chi duoc dat 1 chuyen bay dang hoat dong!            ";
+        if (dup) {
+            ClearAt(5, 8, 80);
+            gotoXY(5, 8); cout << "  >> CMND nay da co ve tren chuyen nay!";
             continue;
         }
 
-        ClearAt(5, 8, 60);
+        // 3) Tồn tại hay chưa? Nếu có -> in ra kiểm tra; nếu chưa -> mở FormThemHanhKhach
+        nodeHK* found = FindHK_BySoCM(dskh, soCMND);
+        if (found) {
+            // In cho kiểm tra & xin xác nhận
+            ShowKH(found->hk, 5, 8);
+            if (!Confirm(5, 13, "Thong tin tren co dung? Tiep tuc DAT VE?")) {
+                gotoXY(5, 15); cout << "Huy dat ve. Nhan phim bat ky...";
+                _getch(); ShowCur(0); return;
+            }
+            ClearAt(5, 8, 90); ClearAt(5, 9, 90); ClearAt(5, 10, 90);
+            ClearAt(5, 11, 90); ClearAt(5, 12, 90); ClearAt(5, 13, 90);
+
+            break; // <--- THOAT VONG while sau khi xac nhan OK
+        }
+        else {
+            // CMND chưa có -> hỏi có mở form KH không?
+            ClearAt(5, 8, 90);
+            gotoXY(5, 8); cout << "CMND chua co trong DSKH.";
+            if (!Confirm(5, 9, "Mo form THEM HANH KHACH de them?")) {
+                gotoXY(5, 11); cout << "Huy dat ve. Nhan phim bat ky...";
+                _getch(); ShowCur(0); return;
+            }
+
+            // Mở form thêm khách hàng (form sẵn có của bạn)
+            ShowCur(1);
+            FormThemHanhKhach(dskh);            // người dùng sẽ nhập lại CMND trong form này
+            SaveFile_KH("DSKH.txt", dskh);
+            ShowCur(0);
+
+            // Nạp lại cây từ file để đồng bộ, rồi kiểm tra đúng CMND vừa nhập chưa
+            dskh = NULL;
+            LoadFile_KH("DSKH.txt", dskh);
+
+            if (!FindHK_BySoCM(dskh, soCMND)) {
+
+                ClearAt(5, 8, 90); ClearAt(5, 9, 90);
+                gotoXY(5, 8);  cout << "CMND " << soCMND << " chua duoc them vao DSKH.";
+                gotoXY(5, 9);  cout << "Vui long NHAP LAI CMND dung de dat hoac them dung CMND trong HANH KHACH.";
+                continue; 
+            }
+
+            
+            ClearAt(5, 8, 90); ClearAt(5, 9, 90);
+            break; 
+        }
+    }
+
+    // === HIEN SO DO & CHO CHON GHE ===
+    int ghe = -1;
+    while (true) {
+        // Hiển thị sơ đồ ghế
+        ShowSeatMap(cb, 20, 16, 10);
+
+        // Nhập số ghế
+        gotoXY(5, 14); cout << "Nhap so ghe (1.." << cb.soChoMax << ") hoac 0 de tu dong: ";
+        // Xoá vùng nhập cũ nếu có
+        ClearAt(5 + 46, 14, 10);
+
+        char buf[16];
+        gotoXY(5 + 46, 14);
+        if (!cin.getline(buf, sizeof(buf))) { cin.clear(); cin.ignore(1000, '\n'); continue; }
+
+        // Chuẩn hoá
+        RemoveAllSpaces(buf);
+        int len = (int)strlen(buf);
+
+        // 0 hoặc rỗng -> tự động chọn ghế trống nhỏ nhất
+        if (len == 0 || (len == 1 && buf[0] == '0')) {
+            ghe = FindFirstFreeSeat(cb);
+            if (ghe < 0) {
+                cb.ttcb = HET_VE;
+                gotoXY(5, 10); cout << "Chuyen bay da het ve!"; _getch(); ShowCur(0); return;
+            }
+            break;
+        }
+
+        // Kiểm tra số hợp lệ
+        bool allDigits = true;
+        for (int i = 0; i < len; ++i) if (!isdigit((unsigned char)buf[i])) { allDigits = false; break; }
+        if (!allDigits) { gotoXY(5, 15); cout << ">> Chi nhap so nguyen hop le!      "; continue; }
+
+        ghe = atoi(buf);
+        if (ghe < 1 || ghe > cb.soChoMax) { gotoXY(5, 15); cout << ">> Ngoai pham vi ghe!              "; continue; }
+        if (IsSeatTaken(cb, ghe)) { gotoXY(5, 15); cout << ">> Ghe da duoc dat, chon ghe khac! "; continue; }
+
+        // OK
+        gotoXY(5, 15); cout << "                                     ";
         break;
     }
 
-    // --- Ghi ve ---
-    int idx = cb.dsVe.soVeDaDat;
+    // === GHI VE ===
+    
+    // Ghi vé an toàn, không tràn mảng nhờ soVeDaDat++
+    int idx = cb.dsVe.soVeDaDat++;
     strncpy_s(cb.dsVe.danhSach[idx].soCMND, soCMND, sizeof(cb.dsVe.danhSach[idx].soCMND));
-    cb.dsVe.soVeDaDat = idx + 1;
+    cb.dsVe.danhSach[idx].soGhe = ghe;
+    cb.dsVe.danhSach[idx].trangThai = true;
 
-    // --- Cap nhat trang thai chuyen ---
+    // Cập nhật trạng thái
     if (cb.dsVe.soVeDaDat >= cb.soChoMax) cb.ttcb = HET_VE;
-    else if (cb.ttcb == HET_VE) cb.ttcb = CON_VE; // neu chua full thi de CON_VE
 
-    gotoXY(5, 10); cout << "=> Dat ve thanh cong. Nhan phim bat ky...";
+    gotoXY(5, 10); cout << "=> Dat ve thanh cong. So ghe: " << ghe << ". Nhan phim bat ky...";
+    _getch(); ShowCur(0);
+
+}
+
+static int FindVeIndexByCMND(const ChuyenBay& cb, const char* soCM) {
+    for (int i = 0; i < cb.dsVe.soVeDaDat; ++i) {
+        if (cb.dsVe.danhSach[i].trangThai &&
+            strcmp(cb.dsVe.danhSach[i].soCMND, soCM) == 0) return i;
+    }
+    return -1;
+}
+
+void FormHuyVe(PTRCB& dscb)
+{
+    ResetColor(); system("cls"); ShowCur(1);
+    gotoXY(5, 2); cout << "=== HUY VE ===";
+
+    // --- Nhập mã chuyến bay ---
+    char maCB[MAX_MA_CB_LENGTH];
+    gotoXY(5, 4); cout << "Nhap MA CHUYEN BAY: ";
+    gotoXY(26, 4);
+    if (!cin.getline(maCB, sizeof(maCB))) { cin.clear(); cin.ignore(1000, '\n'); ShowCur(0); return; }
+    RemoveAllSpaces(maCB); UpperCase(maCB);
+
+    PTRCB node = FindCBByMa(dscb, maCB);
+    if (!node) { gotoXY(5, 6); cout << "Khong tim thay chuyen bay!"; _getch(); ShowCur(0); return; }
+
+    ChuyenBay& cb = node->cb;
+
+    // --- Chỉ cho hủy khi CON_VE hoặc HET_VE ---
+    if (!(cb.ttcb == CON_VE || cb.ttcb == HET_VE)) {
+        gotoXY(5, 6); cout << "Khong the huy ve khi chuyen o trang thai HUY_CHUYEN/HOAN_TAT!";
+        _getch(); ShowCur(0); return;
+    }
+
+    // --- Nhập CMND ---
+    char soCM[MAX_CMND_LENGTH];
+    gotoXY(5, 6);  cout << "Nhap CMND (12 chu so): ";
+    gotoXY(28, 6);
+    if (!cin.getline(soCM, sizeof(soCM))) { cin.clear(); cin.ignore(1000, '\n'); ShowCur(0); return; }
+    RemoveAllSpaces(soCM);
+    int n = (int)strlen(soCM); bool ok = (n == 12);
+    for (int i = 0; i < n && ok; ++i) if (!isdigit((unsigned char)soCM[i])) ok = false;
+    if (!ok) { gotoXY(5, 8); cout << "CMND khong hop le!"; _getch(); ShowCur(0); return; }
+
+    // --- Tìm vé ---
+    int idx = FindVeIndexByCMND(cb, soCM);
+    if (idx < 0) { gotoXY(5, 8); cout << "Khong tim thay ve hop le voi CMND nay!"; _getch(); ShowCur(0); return; }
+
+    // --- Xác nhận ---
+    if (!Confirm(5, 9, "Xac nhan HUY ve nay?")) { ShowCur(0); return; }
+
+    // --- Hủy vé: swap với phần tử cuối để mảng liền mạch ---
+    int last = cb.dsVe.soVeDaDat - 1;
+    if (idx != last) cb.dsVe.danhSach[idx] = cb.dsVe.danhSach[last];
+
+    // Xóa sạch ô cuối
+    cb.dsVe.danhSach[last].soCMND[0] = '\0';
+    cb.dsVe.danhSach[last].soGhe = 0;
+    cb.dsVe.danhSach[last].trangThai = false;
+
+    // Giảm đếm
+    cb.dsVe.soVeDaDat--;
+
+    // Cập nhật trạng thái chuyến (nếu trước đó full)
+    if (cb.ttcb == HET_VE && cb.dsVe.soVeDaDat < cb.soChoMax) cb.ttcb = CON_VE;
+
+    gotoXY(5, 11); cout << "=> Da huy ve thanh cong.";
     _getch(); ShowCur(0);
 }
 
@@ -1605,65 +1808,37 @@ void FormXemDanhSachVe(PTRCB dscb)
     gotoXY(5, 2); cout << "=== XEM DANH SACH VE ===";
     gotoXY(5, 4); cout << "Nhap MA CHUYEN BAY: ";
 
-    char maCB[MAX_MA_CB_LENGTH]     ;
-    gotoXY(26, 4); 
-    while (true) {
+    char maCB[MAX_MA_CB_LENGTH];
+    gotoXY(26, 4);
 
-        if (!cin.getline(maCB, sizeof(maCB))) {
-            gotoXY(5, 13); cout << "Sai dinh dang";
-            continue;
-        }
-
+    if (!cin.getline(maCB, sizeof(maCB))) { // đọc 1 lần là đủ
+        gotoXY(5, 6); cout << "Nhap qua dai / loi input.";
+        _getch(); ShowCur(0); return;
     }
     NormalizeSpaces(maCB); UpperCase(maCB);
 
     nodeChuyenBay* node = FindCBByMa(dscb, maCB);
-    if (!node) {
-        gotoXY(5, 6); cout << "Khong tim thay chuyen bay!";
-        _getch(); ShowCur(0); return;
-    }
-    const ChuyenBay& cb = node->cb;
+    if (!node) { gotoXY(5, 6); cout << "Khong tim thay chuyen bay!"; _getch(); ShowCur(0); return; }
 
+    const ChuyenBay& cb = node->cb;
     int x0 = 5, y0 = 6;
-    gotoXY(x0, y0);   cout << left
-        << setw(6) << "STT"
-        << setw(16) << "CMND";
+    gotoXY(x0, y0);   cout << left << setw(6) << "STT" << setw(16) << "CMND";
     gotoXY(x0, y0 + 1); cout << string(6 + 16, '-');
 
     for (int i = 0; i < cb.dsVe.soVeDaDat; ++i) {
         gotoXY(x0, y0 + 2 + i);
-        cout << left
-            << setw(6) << (i + 1)
-            << setw(16) << cb.dsVe.danhSach[i].soCMND;
+        cout << left << setw(6) << (i + 1) << setw(16) << cb.dsVe.danhSach[i].soCMND;
     }
-
     gotoXY(x0, y0 + 3 + cb.dsVe.soVeDaDat);
-    cout << "Tong: " << cb.dsVe.soVeDaDat << "/" << cb.soChoMax
-        << ".  Nhan phim bat ky de quay lai...";
+    cout << "Tong: " << cb.dsVe.soVeDaDat << "/" << cb.soChoMax << ".  Nhan phim bat ky de quay lai...";
     _getch(); ShowCur(0);
-}
-
-// kiểm tra toàn bộ chuyến bay khác
-
-bool HanhKhachDatToiDa1CB(PTRCB dscb, char* soCMND) {
-    for (PTRCB p = dscb; p != NULL; p = p->next) {
-        if (p->cb.ttcb == CON_VE) { // chỉ check chuyến còn hoạt động
-            for (int i = 0; i < p->cb.dsVe.soVeDaDat; ++i) {
-                if (strcmp(p->cb.dsVe.danhSach[i].soCMND, soCMND) == 0) {
-                    return true;
-                    break;
-                }
-            }
-        }
-    }
-    return false;
 }
 
 
 
 
 // ========= So sánh CMND (khóa BST) =========
-int cmpSoCM(const char* a, const char* b) { return _stricmp(a, b); }
+int cmpSoCM(const char* a, const char* b) { return strcmp(a, b); }
 
 // ========= Chèn khách hàng vào BST theo soCM (đã giống thuật toán của thầy) =========
 
@@ -1693,79 +1868,82 @@ void _writeKH_inorder_with_width(ofstream& f, treeHK t) {
     if (!t) return;
     _writeKH_inorder_with_width(f, t->left);
 
-    // Encode Tên (space -> '_') để khi đọc bằng >> không bị cắt
-    char tenEncoded[30]; // chỉnh đúng kích thước Ten trong struct của bạn
+    char tenEncoded[30];
     strncpy(tenEncoded, t->hk.Ten, sizeof(tenEncoded) - 1);
     tenEncoded[sizeof(tenEncoded) - 1] = '\0';
     for (int i = 0; tenEncoded[i]; ++i) if (tenEncoded[i] == ' ') tenEncoded[i] = '_';
 
     f << left
-        << setw(30) << t->hk.soCM
-        << setw(30) << t->hk.Ho
-        << setw(30) << tenEncoded
-        << setw(30) << t->hk.Phai
+        << setw(40) << t->hk.soCM
+        << setw(40) << t->hk.Ho
+        << setw(40) << tenEncoded
+        << setw(40) << t->hk.Phai
         << '\n';
 
     _writeKH_inorder_with_width(f, t->right);
 }
 
-bool SaveFile_KH(string filePath, treeHK dskh) {
+
+bool SaveFile_KH(string filePath, treeHK dshk) {
     
     ofstream f(filePath);
     if (!f.is_open()) return false;
-    int n = CountKH(dskh);
+    int n = CountKH(dshk);
     f << n << "\n";                     // <-- GHI DÒNG ĐẾM
-    _writeKH_inorder_with_width(f, dskh);
+    _writeKH_inorder_with_width(f, dshk);
     f.close();
     return true;
 }
 
 
 // ========= Load KH từ file (không dòng đếm) =========
-bool LoadFile_KH(const string& filename, treeHK& dskh) {
-    dskh = NULL;
-    ifstream fin(filename);
+bool LoadFile_KH( string filePath, treeHK& dshk) {
+    dshk = NULL;
+    ifstream fin(filePath);
     if (!fin.is_open()) return false;
 
-    int slkh;
+    int slkh = 0;
     fin >> slkh;
+    fin.ignore(1000, '\n'); // bỏ đến hết dòng 1
 
-    HanhKhach kh{};
+    HanhKhach hk{};
     int loaded = 0;
-    
 
-    while (true) {
-        if (!(fin >> setw(MAX_CMND_LENGTH) >> kh.soCM)) break;
-        if (!(fin >> setw(MAX_HO_LENGTH) >> kh.Ho))   break;
-        if (!(fin >> setw(MAX_TEN_LENGTH) >> kh.Ten))  break;
-        if (!(fin >> setw(MAX_GIOI_TINH) >> kh.Phai)) break;
+    for (int i = 0; i < slkh; ++i) {
+        // đọc từng trường, giới hạn chiều dài để tránh tràn
+        if (!(fin >> setw(40) >> hk.soCM)) break;
+        if (!(fin >> setw(40) >> hk.Ho))   break;
+        if (!(fin >> setw(40) >> hk.Ten))  break;
+        if (!(fin >> setw(40) >> hk.Phai)) break;
 
-        DecodeSpaces(kh.Ten);
-        InsertHK(dskh, kh);
+        DecodeSpaces(hk.Ten);          // bạn đã mã hóa Ten khi ghi file
+        // chuẩn hóa tối thiểu để chắc key sạch:
+        RemoveAllSpaces(hk.soCM);
+
+        InsertHK(dshk, hk);
         ++loaded;
     }
     fin.close();
     return loaded > 0;
 }
-
 // ========= In danh sách KH (đệ quy inorder) =========
-void _inorder_print(treeHK t, int x0, int y0, int& row) {
-    if (t == NULL) return;
-    _inorder_print(t->left, x0, y0, row);
+void _inorder_print(treeHK dshk, int x0, int y0, int& row) {
+    if (dshk == NULL) return;
+    _inorder_print(dshk->left, x0, y0, row);
 
     gotoXY(x0, y0 + row);
     cout << left
         << setw(6) << (row - 1)      // STT
-        << setw(16) << t->hk.soCM
-        << setw(16) << t->hk.Ho
-        << setw(20) << t->hk.Ten
-        << setw(6) << t->hk.Phai;
+        << setw(16) << dshk->hk.soCM
+        << setw(16) << dshk->hk.Ho
+        << setw(20) << dshk->hk.Ten
+        << setw(6) << dshk->hk.Phai;
     row++;
 
-    _inorder_print(t->right, x0, y0, row);
+    _inorder_print(dshk->right, x0, y0, row);
 }
 
-void XemDSKH(treeHK t, int x0, int y0) {
+void XemDSKH(treeHK dshk, int x0, int y0) {
     // Header
     gotoXY(x0, y0);
     cout << left
@@ -1778,11 +1956,11 @@ void XemDSKH(treeHK t, int x0, int y0) {
     cout << string(6 + 16 + 16 + 20 + 6, '-');
 
     int row = 2; // bắt đầu in dưới header
-    _inorder_print(t, x0, y0, row);
+    _inorder_print(dshk, x0, y0, row);
 }
 
 // Form thêm khách hàng: nhập cin >> tại vị trí con trỏ, chèn vào BST rồi lưu file
-void FormThemHanhKhach(treeHK& dskh) {
+void FormThemHanhKhach(treeHK& dshk) {
     ResetColor(); ShowCur(1); system("cls");
     gotoXY(5, 1);  cout << "=== THEM HANH KHACH ===";
     gotoXY(5, 3);  cout << "SO CM  : ";
@@ -1798,16 +1976,16 @@ void FormThemHanhKhach(treeHK& dskh) {
     // --- Nhập SO CM: đúng 12 chữ số ---
     while (true) {
         gotoXY(23, 3);
-        // Nếu trước đó có dùng cin >> ở nơi khác, nên bỏ newline còn dư:
-        // cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        
 
         if (!cin.getline(soCM, sizeof(soCM))) {
             cin.clear();
             cin.ignore(1000, '\n');
-            gotoXY(5, 8); cout << "So CMND toi da " << (int)sizeof(soCM) - 1 << " ky tu!";
+            gotoXY(5, 8); cout << "So CMND toi da 12 ky tu!";
             ClearAt(35, 8, 50);
             continue;
         }
+        RemoveAllSpaces(soCM);
         if (IsEmpty(soCM)) { gotoXY(5, 8); cout << "Khong de trong."; ClearAt(35, 8, 50); continue; }
         if (strcmp(soCM, "0") == 0) { gotoXY(5, 8); cout << "Khong nhap '0'."; ClearAt(35, 8, 50); continue; }
 
@@ -1841,6 +2019,8 @@ void FormThemHanhKhach(treeHK& dskh) {
         ClearAt(5, 8, 80);
         break;
     }
+    RemoveAllSpaces(Ho);
+    Inhoachudau(Ho);
 
     // --- Nhập TEN: (tuỳ yêu cầu: cho phép chữ + khoảng trắng, cấm số) ---
     while (true) {
@@ -1863,6 +2043,8 @@ void FormThemHanhKhach(treeHK& dskh) {
         ClearAt(5, 8, 80);
         break;
     }
+    NormalizeSpaces(Ten);
+    Inhoachudau(Ten);
 
     // --- Nhập PHAI: Nam/Nu ---
     while (true) {
@@ -1885,25 +2067,24 @@ void FormThemHanhKhach(treeHK& dskh) {
         ClearAt(5, 8, 80);
         break;
     }
-
+    RemoveAllSpaces(Phai);
   
     // Đổ sang struct HanhKhach (char[]) an toàn
-    HanhKhach kh{};
-    strncpy(kh.soCM, soCM, sizeof(kh.soCM) - 1);
-    strncpy(kh.Ho, Ho, sizeof(kh.Ho) - 1);
-    strncpy(kh.Ten, Ten, sizeof(kh.Ten) - 1);
-    strncpy(kh.Phai, Phai, sizeof(kh.Phai) - 1);
+    HanhKhach hk;
+    strncpy_s(hk.soCM, soCM, sizeof(hk.soCM) );
+    strncpy_s(hk.Ho, Ho, sizeof(hk.Ho) );
+    strncpy_s(hk.Ten, Ten, sizeof(hk.Ten) );
+    strncpy_s(hk.Phai, Phai, sizeof(hk.Phai) );
 
     // Chèn vào cây
-    bool ok = InsertHK(dskh, kh);
 
     gotoXY(5, 8);
-    if (!ok) {
+    if (!InsertHK(dshk, hk)) {
         cout << "CMND/CCCD da ton tai. Khong them moi.\n";
     }
     else {
         // Luu file ngay sau khi them
-        if (SaveFile_KH("DSKH.txt",dskh)) cout << "Da luu vao DSKH.txt\n";
+        if (SaveFile_KH("DSKH.txt",dshk)) cout << "Da luu vao DSKH.txt\n";
         else                   cout << "Khong mo duoc file DSKH.txt de ghi\n";
     }
 
